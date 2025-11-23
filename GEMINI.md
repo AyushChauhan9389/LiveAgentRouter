@@ -57,6 +57,10 @@ This project uses **Bun** as the preferred package manager (indicated by `bun.lo
 *   **Features:**
     *   **Flow Editor:** Implemented in `components/flow/`, featuring a drag-and-drop sidebar and custom nodes.
     *   `components/nodes/`: Contains custom React Flow node definitions.
+*   **Data & Auth:**
+    *   **Supabase:** Configured for Auth and Database using `@supabase/ssr`.
+    *   `utils/supabase/`: Contains `client.ts`, `server.ts`, and `middleware.ts` for client instantiation.
+    *   `middleware.ts`: Handles Supabase session refreshing.
 *   **Configuration:**
     *   `next.config.ts`: Enables `reactCompiler`.
     *   `biome.json`: Configuration for linter and formatter.

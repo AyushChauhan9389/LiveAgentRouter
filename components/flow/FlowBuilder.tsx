@@ -19,6 +19,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import Sidebar from './Sidebar';
+import JsonButton from './JsonButton';
 import { CustomNode } from '../nodes/CustomNode';
 import { OpenAINode } from '../nodes/OpenAINode';
 import { GeminiNode } from '../nodes/GeminiNode';
@@ -102,6 +103,7 @@ function Flow() {
   return (
     <div className="h-screen w-full relative bg-white overflow-hidden">
       <Sidebar />
+      <JsonButton />
       <div className="w-full h-full" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
