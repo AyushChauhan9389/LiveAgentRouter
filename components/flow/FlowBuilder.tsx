@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -14,24 +14,25 @@ import {
   type Edge,
   type Node,
   BackgroundVariant,
-} from '@xyflow/react';
+} from "@xyflow/react";
 
-import '@xyflow/react/dist/style.css';
+import "@xyflow/react/dist/style.css";
 
-import Sidebar from './Sidebar';
-import JsonButton from './JsonButton';
-import { CustomNode } from '../nodes/CustomNode';
-import { OpenAINode } from '../nodes/OpenAINode';
-import { GeminiNode } from '../nodes/GeminiNode';
-import { HuggingFaceNode } from '../nodes/HuggingFaceNode';
-import { StartNode } from '../nodes/StartNode';
-import { ProcessNode } from '../nodes/ProcessNode';
-import { EndNode } from '../nodes/EndNode';
-import { RouterNode } from '../nodes/RouterNode';
-import { LiveAgentNode } from '../nodes/LiveAgentNode';
-import { DeviceNode } from '../nodes/DeviceNode';
-import { createClient } from '@/utils/supabase/client';
-import { useEffect } from 'react';
+import Sidebar from "./Sidebar";
+import JsonButton from "./JsonButton";
+import { CustomNode } from "../nodes/CustomNode";
+import { OpenAINode } from "../nodes/OpenAINode";
+import { GeminiNode } from "../nodes/GeminiNode";
+import { HuggingFaceNode } from "../nodes/HuggingFaceNode";
+import { StartNode } from "../nodes/StartNode";
+import { ProcessNode } from "../nodes/ProcessNode";
+import { EndNode } from "../nodes/EndNode";
+import { RouterNode } from "../nodes/RouterNode";
+import { LiveAgentNode } from "../nodes/LiveAgentNode";
+import { DeviceNode } from "../nodes/DeviceNode";
+import { GlobalConnectorNode } from "../nodes/GlobalConnectorNode";
+import { createClient } from "@/utils/supabase/client";
+import { useEffect } from "react";
 
 // Register custom node types
 const nodeTypes = {
@@ -45,6 +46,7 @@ const nodeTypes = {
   router: RouterNode,
   liveAgent: LiveAgentNode,
   device: DeviceNode,
+  globalConnector: GlobalConnectorNode,
 };
 
 let id = 0;
@@ -59,18 +61,18 @@ function Flow({ initialDevices }: FlowProps) {
 
   const defaultNodes: Node[] = [
     {
-      id: '1',
-      type: 'start',
-      data: { label: 'Initiate' },
+      id: "1",
+      type: "start",
+      data: { label: "Initiate" },
       position: { x: 250, y: 50 },
     },
     ...initialDevices.map((device, index) => ({
       id: `device-${device.id}`,
-      type: 'device',
-      position: { x: 100 + (index * 250), y: 500 },
-      data: { 
+      type: "device",
+      position: { x: 100 + index * 250, y: 500 },
+      data: {
         label: device.device_name,
-        ...device 
+        ...device,
       },
     })),
   ];
@@ -80,24 +82,26 @@ function Flow({ initialDevices }: FlowProps) {
   const { screenToFlowPosition } = useReactFlow();
 
   const usedDeviceIds = nodes
-    .filter((node) => node.type === 'device')
+    .filter((node) => node.type === "device")
     .map((node) => {
-      return node.id.startsWith('device-') ? node.id.replace('device-', '') : String(node.data.id || '');
+      return node.id.startsWith("device-")
+        ? node.id.replace("device-", "")
+        : String(node.data.id || "");
     });
 
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel('realtime devices')
+      .channel("realtime devices")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'devices',
+          event: "UPDATE",
+          schema: "public",
+          table: "devices",
         },
         (payload) => {
-          console.log('Realtime update received:', payload);
+          console.log("Realtime update received:", payload);
           setNodes((nds) =>
             nds.map((node) => {
               if (node.id === `device-${payload.new.id}`) {
@@ -111,9 +115,9 @@ function Flow({ initialDevices }: FlowProps) {
                 };
               }
               return node;
-            })
+            }),
           );
-        }
+        },
       )
       .subscribe();
 
@@ -129,20 +133,22 @@ function Flow({ initialDevices }: FlowProps) {
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
   }, []);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData('application/reactflow/type');
-      const label = event.dataTransfer.getData('application/reactflow/label');
-      const metaString = event.dataTransfer.getData('application/reactflow/meta');
+      const type = event.dataTransfer.getData("application/reactflow/type");
+      const label = event.dataTransfer.getData("application/reactflow/label");
+      const metaString = event.dataTransfer.getData(
+        "application/reactflow/meta",
+      );
       const meta = metaString ? JSON.parse(metaString) : {};
 
       // check if the dropped element is valid
-      if (typeof type === 'undefined' || !type) {
+      if (typeof type === "undefined" || !type) {
         return;
       }
 
@@ -156,7 +162,11 @@ function Flow({ initialDevices }: FlowProps) {
         id: meta.db_id ? `device-${meta.db_id}` : getId(),
         type,
         position,
-        data: { label: label, description: 'A new draggable component', ...meta },
+        data: {
+          label: label,
+          description: "A new draggable component",
+          ...meta,
+        },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -188,7 +198,11 @@ function Flow({ initialDevices }: FlowProps) {
   );
 }
 
-export default function FlowBuilder({ initialDevices }: { initialDevices: any[] }) {
+export default function FlowBuilder({
+  initialDevices,
+}: {
+  initialDevices: any[];
+}) {
   return (
     <ReactFlowProvider>
       <Flow initialDevices={initialDevices} />
