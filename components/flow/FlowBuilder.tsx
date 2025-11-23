@@ -29,6 +29,9 @@ import { ProcessNode } from '../nodes/ProcessNode';
 import { EndNode } from '../nodes/EndNode';
 import { RouterNode } from '../nodes/RouterNode';
 import { LiveAgentNode } from '../nodes/LiveAgentNode';
+import { DeviceNode } from '../nodes/DeviceNode';
+import { createClient } from '@/utils/supabase/client';
+import { useEffect } from 'react';
 
 // Register custom node types
 const nodeTypes = {
@@ -41,25 +44,83 @@ const nodeTypes = {
   end: EndNode,
   router: RouterNode,
   liveAgent: LiveAgentNode,
+  device: DeviceNode,
 };
-
-const initialNodes: Node[] = [
-  {
-    id: '1',
-    type: 'start',
-    data: { label: 'Initiate' },
-    position: { x: 250, y: 50 },
-  },
-];
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-function Flow() {
+interface FlowProps {
+  initialDevices: any[];
+}
+
+function Flow({ initialDevices }: FlowProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+
+  const defaultNodes: Node[] = [
+    {
+      id: '1',
+      type: 'start',
+      data: { label: 'Initiate' },
+      position: { x: 250, y: 50 },
+    },
+    ...initialDevices.map((device, index) => ({
+      id: `device-${device.id}`,
+      type: 'device',
+      position: { x: 100 + (index * 250), y: 500 },
+      data: { 
+        label: device.device_name,
+        ...device 
+      },
+    })),
+  ];
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
+
+  const usedDeviceIds = nodes
+    .filter((node) => node.type === 'device')
+    .map((node) => {
+      return node.id.startsWith('device-') ? node.id.replace('device-', '') : String(node.data.id || '');
+    });
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('realtime devices')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'devices',
+        },
+        (payload) => {
+          console.log('Realtime update received:', payload);
+          setNodes((nds) =>
+            nds.map((node) => {
+              if (node.id === `device-${payload.new.id}`) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    ...payload.new,
+                    label: payload.new.device_name,
+                  },
+                };
+              }
+              return node;
+            })
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [setNodes]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -77,6 +138,8 @@ function Flow() {
 
       const type = event.dataTransfer.getData('application/reactflow/type');
       const label = event.dataTransfer.getData('application/reactflow/label');
+      const metaString = event.dataTransfer.getData('application/reactflow/meta');
+      const meta = metaString ? JSON.parse(metaString) : {};
 
       // check if the dropped element is valid
       if (typeof type === 'undefined' || !type) {
@@ -89,10 +152,11 @@ function Flow() {
       });
 
       const newNode: Node = {
-        id: getId(),
+        // If it's a DB device, use its DB ID to allow realtime updates
+        id: meta.db_id ? `device-${meta.db_id}` : getId(),
         type,
         position,
-        data: { label: label, description: 'A new draggable component' },
+        data: { label: label, description: 'A new draggable component', ...meta },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -102,7 +166,7 @@ function Flow() {
 
   return (
     <div className="h-screen w-full relative bg-white overflow-hidden">
-      <Sidebar />
+      <Sidebar devices={initialDevices} usedDeviceIds={usedDeviceIds} />
       <JsonButton />
       <div className="w-full h-full" ref={reactFlowWrapper}>
         <ReactFlow
@@ -124,10 +188,10 @@ function Flow() {
   );
 }
 
-export default function FlowBuilder() {
+export default function FlowBuilder({ initialDevices }: { initialDevices: any[] }) {
   return (
     <ReactFlowProvider>
-      <Flow />
+      <Flow initialDevices={initialDevices} />
     </ReactFlowProvider>
   );
 }

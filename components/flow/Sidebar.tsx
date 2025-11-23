@@ -2,14 +2,49 @@
 
 import React, { useState } from 'react';
 
-export default function Sidebar() {
+interface SidebarProps {
+  devices: any[];
+  usedDeviceIds: string[];
+}
+
+export default function Sidebar({ devices = [], usedDeviceIds = [] }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
+  const onDragStart = (event: React.DragEvent, nodeType: string, label: string, meta?: Record<string, any>) => {
     event.dataTransfer.setData('application/reactflow/type', nodeType);
     event.dataTransfer.setData('application/reactflow/label', label);
+    if (meta) {
+       event.dataTransfer.setData('application/reactflow/meta', JSON.stringify(meta));
+    }
     event.dataTransfer.effectAllowed = 'move';
   };
+
+  const isDeviceUsed = (deviceId: string) => usedDeviceIds.includes(deviceId.toString());
+
+  const getDeviceIcon = (type: string) => {
+      switch (type) {
+          case 'fan':
+              return (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 animate-spin">
+                        <path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM17.834 18.894a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 1 0-1.061 1.06l1.59 1.591ZM12 18a.75.75 0 0 1 .75.75V21a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 12 18ZM7.758 17.303a.75.75 0 0 0-1.061-1.06l-1.591 1.59a.75.75 0 0 0 1.06 1.061l1.591-1.59ZM6 12a.75.75 0 0 1-.75.75H3a.75.75 0 0 1 0-1.5h2.25A.75.75 0 0 1 6 12ZM6.697 7.757a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 0 0-1.061 1.06l1.59 1.591Z" />
+                    </svg>
+              );
+          case 'light':
+              return (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+                        <path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM17.834 18.894a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 1 0-1.061 1.06l1.59 1.591ZM12 18a.75.75 0 0 1 .75.75V21a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 12 18ZM7.758 17.303a.75.75 0 0 0-1.061-1.06l-1.591 1.59a.75.75 0 0 0 1.06 1.061l1.591-1.59ZM6 12a.75.75 0 0 1-.75.75H3a.75.75 0 0 1 0-1.5h2.25A.75.75 0 0 1 6 12ZM6.697 7.757a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 0 0-1.061 1.06l1.59 1.591Z" />
+                    </svg>
+              );
+          case 'AC':
+              return (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+                        <path fillRule="evenodd" d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177 7.547 7.547 0 0 1-1.705-1.715.75.75 0 0 0-1.152-.082A9.725 9.725 0 0 0 4.1 9.911a.75.75 0 0 0 .71.346 8.262 8.262 0 0 1 2.287-.495 7.68 7.68 0 0 1 4.566 4.566 8.262 8.262 0 0 1 .495 2.287.75.75 0 0 0 .346.71 9.725 9.725 0 0 0 3.38 1.404.75.75 0 0 0 .082-1.152 7.547 7.547 0 0 1 1.715-1.705 9.742 9.742 0 0 0 6.177-3.539.75.75 0 0 0-.136-1.072 9.753 9.753 0 0 0-2.262-1.566 9.753 9.753 0 0 0-1.566-2.263 9.753 9.753 0 0 0-2.263-1.566 9.753 9.753 0 0 0-1.566-2.262 9.752 9.752 0 0 0-2.262-1.566Z" clipRule="evenodd" />
+                    </svg>
+              );
+          default:
+              return <div className="w-3 h-3 rounded-full bg-cyan-500"></div>;
+      }
+  }
 
   return (
     <aside className="absolute top-4 left-4 z-40 flex flex-col gap-2 font-sans">
@@ -184,6 +219,36 @@ export default function Sidebar() {
                         </div>
                     </div>
 
+                </div>
+            </div>
+
+            {/* Hardware Section */}
+            <div>
+                <div className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-3 ml-1">Hardware Units</div>
+                <div className="space-y-2">
+                    {devices.map((device) => {
+                         const isUsed = isDeviceUsed(device.id);
+                         return (
+                            <div
+                                key={device.id}
+                                className={`relative group ${isUsed ? 'opacity-50 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+                                draggable={!isUsed}
+                                onDragStart={(event) => !isUsed && onDragStart(event, 'device', device.device_name, { ...device, db_id: device.id })}
+                            >
+                                <div className={`bg-cyan-50 border border-cyan-200 rounded-lg p-1 transition-all ${!isUsed ? 'hover:shadow-md hover:border-cyan-300' : ''}`}>
+                                    <div className="p-2 flex items-center gap-2">
+                                        <div className="p-1 rounded-full bg-cyan-500 text-white">
+                                            {getDeviceIcon(device.device_type)}
+                                        </div>
+                                        <span className="font-mono text-[10px] font-bold text-cyan-900 uppercase">{device.device_name}</span>
+                                    </div>
+                                </div>
+                            </div>
+                         );
+                    })}
+                    {devices.length === 0 && (
+                         <div className="text-[10px] font-mono text-stone-400 italic pl-2">No devices found</div>
+                    )}
                 </div>
             </div>
 
