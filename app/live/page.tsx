@@ -162,17 +162,18 @@ export default function LivePage() {
 
       const model = "gemini-2.5-flash-native-audio-preview-09-2025";
 
-      sessionRef.current = await ai.live.connect({
+      // Connect first, then assign session
+      const session = await ai.live.connect({
         model,
         config,
         callbacks: {
           onopen: async () => {
-            addLog("CONNECTION_ESTABLISHED");
-            setIsConnected(true);
-            await startAudioInput(ctx);
+            console.log("WebSocket connection opened");
           },
           onmessage: async (message: any) => {
             console.log("Received message:", message);
+            // Verbose logging to debug response
+            console.log("Full message:", JSON.stringify(message, null, 2));
 
             if (message.serverContent?.modelTurn?.parts) {
               const parts = message.serverContent.modelTurn.parts;
@@ -201,18 +202,23 @@ export default function LivePage() {
         }
       });
 
+      sessionRef.current = session;
+      addLog("CONNECTION_ESTABLISHED");
+      setIsConnected(true);
+      
+      // Start audio AFTER session is ready
+      await startAudioInput(ctx);
+
       // Send an initial text message after connection is established
-      if (sessionRef.current) {
-        sessionRef.current.sendClientContent({
-          turns: [{
-            role: "user",
-            parts: [{
-              text: "Hello! I'm listening. Feel free to talk to me or ask me to change the background color."
-            }]
-          }],
-          turnComplete: true
-        });
-      }
+      session.sendClientContent({
+        turns: [{
+          role: "user",
+          parts: [{
+            text: "Hello! I'm listening. Feel free to talk to me or ask me to change the background color."
+          }]
+        }],
+        turnComplete: true
+      });
 
     } catch (error: any) {
       addLog(`FATAL_ERROR: ${error.message}`);
