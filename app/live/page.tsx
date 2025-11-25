@@ -181,7 +181,7 @@ export default function LivePage() {
                 }
               }
             }
-            
+
             if (message.toolCall) {
               addLog("EXEC_TOOL: CHANGE_COLOR");
               handleToolCall(message.toolCall);
@@ -196,6 +196,19 @@ export default function LivePage() {
           }
         }
       });
+
+      // Send an initial text message after connection is established
+      if (sessionRef.current) {
+        sessionRef.current.sendClientContent({
+          turns: [{
+            role: "user",
+            parts: [{
+              text: "Hello! I'm listening. Feel free to talk to me or ask me to change the background color."
+            }]
+          }],
+          turnComplete: true
+        });
+      }
 
     } catch (error: any) {
       addLog(`FATAL_ERROR: ${error.message}`);
@@ -279,13 +292,13 @@ export default function LivePage() {
       workletNode.port.onmessage = (e) => {
         if (!sessionRef.current) return;
 
-        const inputData = e.data; 
+        const inputData = e.data;
         const pcm16 = floatTo16BitPCM(inputData);
         const base64Audio = arrayBufferToBase64(pcm16.buffer);
 
         sessionRef.current.sendRealtimeInput([{
-            mimeType: `audio/pcm;rate=${AUDIO_INPUT_SAMPLE_RATE}`,
-            data: base64Audio
+          mimeType: `audio/pcm;rate=${AUDIO_INPUT_SAMPLE_RATE}`,
+          data: base64Audio
         }]);
       };
 
