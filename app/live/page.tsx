@@ -260,13 +260,18 @@ export default function LivePage() {
   // --- Audio Input (Mic) ---
   const startAudioInput = async (ctx: AudioContext) => {
     try {
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("getUserMedia not supported. Use HTTPS or modern browser.");
+      }
+
       if (ctx.state === 'suspended') await ctx.resume();
 
       // Register worklet only if not already loaded in this context
       if (!isWorkletLoadedRef.current) {
         const blob = new Blob([RECORDING_WORKLET_CODE], { type: 'application/javascript' });
         const workletUrl = URL.createObjectURL(blob);
-        
+
         try {
             await ctx.audioWorklet.addModule(workletUrl);
             isWorkletLoadedRef.current = true;
