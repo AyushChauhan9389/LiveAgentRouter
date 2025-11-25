@@ -172,10 +172,14 @@ export default function LivePage() {
             await startAudioInput(ctx);
           },
           onmessage: async (message: any) => {
+            console.log("Received message:", message);
+
             if (message.serverContent?.modelTurn?.parts) {
               const parts = message.serverContent.modelTurn.parts;
+              console.log("Model turn parts:", parts.length);
               for (const part of parts) {
                 if (part.inlineData && part.inlineData.mimeType.startsWith("audio/pcm")) {
+                  console.log("Playing audio response");
                   const pcmData = base64ToInt16(part.inlineData.data);
                   playAudioChunk(pcmData, ctx);
                 }
@@ -266,6 +270,7 @@ export default function LivePage() {
       }
 
       if (ctx.state === 'suspended') await ctx.resume();
+      console.log("AudioContext state:", ctx.state, "Sample rate:", ctx.sampleRate);
 
       // Register worklet only if not already loaded in this context
       if (!isWorkletLoadedRef.current) {
@@ -275,12 +280,14 @@ export default function LivePage() {
         try {
             await ctx.audioWorklet.addModule(workletUrl);
             isWorkletLoadedRef.current = true;
+            console.log("Audio worklet registered successfully");
         } catch (e) {
             // If it fails, it might be because it was already registered (race condition or tracking error)
             console.warn("Worklet addModule warning:", e);
         }
       }
 
+      console.log("Requesting microphone access...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: { 
           echoCancellation: true,
@@ -289,27 +296,56 @@ export default function LivePage() {
           sampleRate: AUDIO_INPUT_SAMPLE_RATE
         } 
       });
-      
+
+      console.log("Microphone access granted. Stream tracks:", stream.getTracks().length);
+
       streamRef.current = stream;
       const source = ctx.createMediaStreamSource(stream);
+      console.log("MediaStreamSource created");
+
       const workletNode = new AudioWorkletNode(ctx, 'recorder-processor');
-      
+      console.log("AudioWorkletNode created");
+
+      let chunkCount = 0;
       workletNode.port.onmessage = (e) => {
-        if (!sessionRef.current) return;
+        if (!sessionRef.current) {
+          console.warn("Session not available, skipping audio chunk");
+          return;
+        }
 
         const inputData = e.data;
         const pcm16 = floatTo16BitPCM(inputData);
         const base64Audio = arrayBufferToBase64(pcm16.buffer);
 
-        sessionRef.current.sendRealtimeInput([{
-          mimeType: `audio/pcm;rate=${AUDIO_INPUT_SAMPLE_RATE}`,
-          data: base64Audio
-        }]);
+        // Log first few chunks to verify audio is being captured
+        chunkCount++;
+        if (chunkCount <= 3) {
+          console.log(`Sending audio chunk ${chunkCount}, size: ${base64Audio.length}`);
+        }
+
+        sessionRef.current.sendRealtimeInput({
+          audio: {
+            mimeType: `audio/pcm;rate=${ctx.sampleRate}`,
+            data: base64Audio
+          }
+        });
       };
 
+      console.log("Worklet message handler attached");
+
       source.connect(workletNode);
-      workletNode.connect(ctx.createGain()); 
+      console.log("Source connected to worklet");
+
+      // Connect to destination so the worklet's process() method gets called
+      // Use a gain node with volume 0 to avoid feedback
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = 0; // Mute the microphone input to avoid feedback
+      workletNode.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      console.log("Worklet connected to destination (muted)");
+
       workletNodeRef.current = workletNode;
+      addLog("MIC_ACTIVE");
 
     } catch (err: any) {
       addLog(`MIC_ERROR: ${err.message}`);
