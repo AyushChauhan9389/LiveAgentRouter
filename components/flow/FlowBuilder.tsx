@@ -200,7 +200,7 @@ function Flow({ initialDevices }: FlowProps) {
         y: event.clientY,
       });
 
-      const newNode: Node = {
+      const newNode = {
         // If it's a DB device, use its DB ID to allow realtime updates
         id: meta.db_id ? `device-${meta.db_id}` : getId(),
         type,
