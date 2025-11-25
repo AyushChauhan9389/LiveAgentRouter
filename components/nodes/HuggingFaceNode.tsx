@@ -3,6 +3,13 @@ import React from "react";
 import { NodeMenu } from "./NodeMenu";
 
 export function HuggingFaceNode({ id, data }: NodeProps) {
+  const [model, setModel] = React.useState((data.model as string) || '');
+
+  const onChange = React.useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+    setModel(evt.target.value);
+    data.model = evt.target.value;
+  }, [data]);
+
   return (
     <div className="relative w-64">
       {/* Background Grid Pattern */}
@@ -32,6 +39,8 @@ export function HuggingFaceNode({ id, data }: NodeProps) {
             <input
               id="hf-model-input"
               type="text"
+              value={model}
+              onChange={onChange}
               placeholder="meta-llama/Llama-3-8b"
               className="nodrag w-full bg-white border border-yellow-300 text-yellow-900 text-[10px] rounded px-2 py-1 font-mono focus:outline-none focus:border-yellow-500 placeholder:text-yellow-400/70"
             />

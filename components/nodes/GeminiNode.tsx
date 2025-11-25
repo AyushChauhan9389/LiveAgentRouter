@@ -3,6 +3,13 @@ import React from "react";
 import { NodeMenu } from "./NodeMenu";
 
 export function GeminiNode({ id, data }: NodeProps) {
+  const [model, setModel] = React.useState((data.model as string) || 'gemini-3-pro');
+
+  const onChange = React.useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
+    setModel(evt.target.value);
+    data.model = evt.target.value;
+  }, [data]);
+
   return (
     <div className="relative w-64">
       {/* Background Grid Pattern */}
@@ -39,12 +46,17 @@ export function GeminiNode({ id, data }: NodeProps) {
             </label>
             <select
               id="gemini-model-select"
+              value={model}
+              onChange={onChange}
               className="nodrag w-full bg-white/50 border border-blue-300 text-blue-900 text-[10px] rounded px-1 py-1 font-mono focus:outline-none focus:border-blue-500"
-              defaultValue="gemini-1.5-pro"
             >
+              <option value="gemini-3-pro">gemini-3-pro</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
               <option value="gemini-1.5-pro">gemini-1.5-pro</option>
               <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-              <option value="gemini-pro">gemini-pro</option>
+              <option value="gemini-1.5-pro-002">gemini-1.5-pro-002</option>
+              <option value="gemini-1.5-flash-002">gemini-1.5-flash-002</option>
             </select>
           </div>
 
@@ -58,12 +70,12 @@ export function GeminiNode({ id, data }: NodeProps) {
 
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         className="w-3 h-3 !bg-blue-600 !border-blue-100 !rounded-sm"
       />
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         className="w-3 h-3 !bg-blue-600 !border-blue-100 !rounded-sm"
       />
     </div>

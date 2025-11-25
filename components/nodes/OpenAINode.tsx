@@ -3,6 +3,13 @@ import React from "react";
 import { NodeMenu } from "./NodeMenu";
 
 export function OpenAINode({ id, data }: NodeProps) {
+  const [model, setModel] = React.useState((data.model as string) || 'gpt-5.1');
+
+  const onChange = React.useCallback((evt: React.ChangeEvent<HTMLSelectElement>) => {
+    setModel(evt.target.value);
+    data.model = evt.target.value;
+  }, [data]);
+
   return (
     <div className="relative w-64">
       {/* Background Grid Pattern */}
@@ -37,10 +44,16 @@ export function OpenAINode({ id, data }: NodeProps) {
             </label>
             <select
               id="model-select"
+              value={model}
+              onChange={onChange}
               className="nodrag w-full bg-white/50 border border-teal-300 text-teal-900 text-[10px] rounded px-1 py-1 font-mono focus:outline-none focus:border-teal-500"
-              defaultValue="gpt-4o"
             >
+              <option value="gpt-5.1">gpt-5.1</option>
+              <option value="gpt-5">gpt-5</option>
+              <option value="gpt-5-mini">gpt-5-mini</option>
               <option value="gpt-4o">gpt-4o</option>
+              <option value="o1-preview">o1-preview</option>
+              <option value="o1-mini">o1-mini</option>
               <option value="gpt-4-turbo">gpt-4-turbo</option>
               <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
             </select>

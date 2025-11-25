@@ -9,16 +9,18 @@ interface NodeMenuProps {
 export function NodeMenu({ id, color }: NodeMenuProps) {
   const { deleteElements } = useReactFlow();
 
+  const onDelete = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    deleteElements({ nodes: [{ id }] });
+  };
+
   return (
     // Positioned absolute top-right
     // Visible only when parent group is hovered
     <div className="absolute -top-2 -right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          deleteElements({ nodes: [{ id }] });
-        }}
-        className="p-1.5 rounded-full bg-white text-red-500 hover:text-red-600 hover:bg-red-50 border border-red-100 shadow-sm transition-colors"
+        onClick={onDelete}
+        className="nodrag p-1.5 rounded-full bg-white text-red-500 hover:text-red-600 hover:bg-red-50 border border-red-100 shadow-sm transition-colors"
         title="Delete Node"
       >
         <svg

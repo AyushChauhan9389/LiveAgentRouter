@@ -248,7 +248,7 @@ export default function Sidebar({
               <div
                 className="relative group cursor-grab active:cursor-grabbing"
                 onDragStart={(event) =>
-                  onDragStart(event, "openai", "GPT-4 Turbo")
+                  onDragStart(event, "openai", "OpenAI")
                 }
                 draggable
               >
@@ -273,6 +273,22 @@ export default function Sidebar({
                     <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                     <span className="font-mono text-[10px] font-bold text-blue-900 uppercase">
                       Gemini
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Claude Preview */}
+              <div
+                className="relative group cursor-grab active:cursor-grabbing"
+                onDragStart={(event) => onDragStart(event, "claude", "Claude")}
+                draggable
+              >
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-1 hover:shadow-md hover:border-orange-300 transition-all">
+                  <div className="p-2 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-orange-600 rounded-full"></div>
+                    <span className="font-mono text-[10px] font-bold text-orange-900 uppercase">
+                      Claude
                     </span>
                   </div>
                 </div>
@@ -392,6 +408,24 @@ export default function Sidebar({
                   <div className="w-1.5 h-1.5 bg-stone-400 rounded-full"></div>
                   <span className="font-mono text-[10px] font-bold text-stone-900 uppercase">
                     Custom
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Note Preview */}
+            <div
+              className="relative group cursor-grab active:cursor-grabbing"
+              onDragStart={(event) =>
+                onDragStart(event, "note", "Note", { label: "New Note" })
+              }
+              draggable
+            >
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-1 hover:shadow-md hover:border-yellow-300 transition-all">
+                <div className="p-2 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                  <span className="font-mono text-[10px] font-bold text-yellow-900 uppercase">
+                    Note
                   </span>
                 </div>
               </div>

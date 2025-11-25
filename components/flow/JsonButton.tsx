@@ -1,6 +1,6 @@
 "use client";
 
-import { useReactFlow, type Node, type Edge } from "@xyflow/react";
+import { useNodes, useEdges } from "@xyflow/react";
 import React, { useState, useEffect } from "react";
 
 interface JsonViewProps {
@@ -9,85 +9,134 @@ interface JsonViewProps {
 }
 
 function JsonViewSidebar({ isOpen, onClose }: JsonViewProps) {
-  const { getNodes, getEdges } = useReactFlow();
+  const nodes = useNodes();
+  const edges = useEdges();
   const [jsonOutput, setJsonOutput] = useState<string>("");
 
-  // Update JSON whenever the sidebar is opened
+  // Update JSON whenever the sidebar is opened or nodes/edges change
   useEffect(() => {
     if (isOpen) {
-      const nodes = getNodes();
-      const edges = getEdges();
+      let currentNodes = nodes;
+      let currentEdges = edges;
 
-      const flowData = {
-        nodes: nodes.map((node) => ({
-          id: node.id,
-          type: node.type,
-          data: node.data,
-          position: node.position,
+      // Fallback to local storage if React Flow hasn't populated yet or is empty
+      if (currentNodes.length === 0) {
+         const saved = localStorage.getItem('flow-storage');
+         if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.nodes) currentNodes = parsed.nodes;
+                if (parsed.edges) currentEdges = parsed.edges;
+            } catch(e) {}
+         }
+      }
+
+      // Categorize nodes
+      const routerTypes = ['router', 'globalConnector', 'start', 'end', 'process'];
+      const modelTypes = ['openai', 'gemini', 'huggingface', 'claude', 'liveAgent'];
+      const deviceTypes = ['device'];
+
+      const routerNodes = currentNodes.filter(n => routerTypes.includes(n.type || ''));
+      const modelNodes = currentNodes.filter(n => modelTypes.includes(n.type || ''));
+      const deviceNodes = currentNodes.filter(n => deviceTypes.includes(n.type || ''));
+      const otherNodes = currentNodes.filter(n => !routerTypes.includes(n.type || '') && !modelTypes.includes(n.type || '') && !deviceTypes.includes(n.type || ''));
+
+      const formattedFlowData = {
+        RouterConfiguration: {
+            ControlFlow: routerNodes.map(node => ({
+                id: node.id,
+                type: node.type,
+                label: node.data.label,
+                position: node.position,
+                data: node.data
+            })),
+            UserModules: otherNodes.map(node => ({
+                id: node.id,
+                type: node.type,
+                label: node.data.label,
+                position: node.position,
+                data: node.data
+            }))
+        },
+        ModelsConnected: modelNodes.map(node => ({
+            id: node.id,
+            type: node.type,
+            label: node.data.label,
+            model: node.data.model, // Explicitly showing model selection
+            position: node.position,
+            data: node.data
         })),
-        edges: edges.map((edge) => ({
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          sourceHandle: edge.sourceHandle,
-          targetHandle: edge.targetHandle,
+        "Devices/Loots": deviceNodes.map(node => ({
+            id: node.id,
+            type: node.type,
+            label: node.data.label,
+            status: node.data.is_on ? 'Online' : 'Offline',
+            position: node.position,
+            data: node.data
         })),
+        Links: currentEdges.map(edge => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: edge.targetHandle,
+        }))
       };
 
-      setJsonOutput(JSON.stringify(flowData, null, 2));
+      setJsonOutput(JSON.stringify(formattedFlowData, null, 2));
     }
-  }, [isOpen, getNodes, getEdges]);
+  }, [isOpen, nodes, edges]);
+
+  if (!isOpen) return null;
 
   return (
-    <div
-      className={`absolute top-0 right-0 h-full w-96 bg-white border-l border-stone-200 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col font-mono ${
-        isOpen ? "translate-x-0" : "translate-x-full"
-      }`}
-    >
-      <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50">
-        <h2 className="text-sm font-bold text-stone-800 uppercase tracking-wide">
-          Flow JSON
-        </h2>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-stone-200 rounded-full transition-colors text-stone-500"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-5 h-5"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="w-[90vw] h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50">
+          <h2 className="text-lg font-bold text-stone-800 uppercase tracking-wide">
+            Flow Configuration JSON
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-stone-200 rounded-full transition-colors text-stone-500"
           >
-            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-          </svg>
-        </button>
-      </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="w-6 h-6"
+            >
+              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+            </svg>
+          </button>
+        </div>
 
-      <div className="flex-1 overflow-auto p-4 bg-stone-50/50">
-        <pre className="text-[10px] text-stone-700 whitespace-pre-wrap break-all">
-          {jsonOutput}
-        </pre>
-      </div>
+        <div className="flex-1 overflow-auto p-6 bg-stone-50/50">
+          <pre className="text-xs md:text-sm text-stone-700 font-mono leading-relaxed">
+            {jsonOutput}
+          </pre>
+        </div>
 
-      <div className="p-4 border-t border-stone-200 bg-white">
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(jsonOutput);
-            alert("JSON copied to clipboard!");
-          }}
-          className="w-full py-2 bg-stone-900 text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-stone-800 transition-colors flex items-center justify-center gap-2"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-3 h-3"
+        <div className="p-4 border-t border-stone-200 bg-white flex justify-end">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(jsonOutput);
+              alert("JSON copied to clipboard!");
+            }}
+            className="px-6 py-3 bg-stone-900 text-white text-sm font-bold uppercase tracking-wider rounded-lg hover:bg-stone-800 transition-colors flex items-center gap-2 shadow-md active:scale-95"
           >
-            <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
-            <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
-          </svg>
-          Copy to Clipboard
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
+              <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
+              <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a1.5 1.5 0 00-.44-1.06L9.44 6.439A1.5 1.5 0 008.378 6H4.5z" />
+            </svg>
+            Copy to Clipboard
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -100,7 +149,7 @@ export default function JsonButton() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="absolute top-4 right-4 z-40 px-3 py-2 bg-white border border-stone-200 shadow-lg rounded-lg hover:bg-stone-50 transition-all active:scale-95 flex items-center gap-2 group"
+        className="relative px-3 py-2 bg-white border border-stone-200 shadow-lg rounded-lg hover:bg-stone-50 transition-all active:scale-95 flex items-center gap-2 group"
       >
         <span className="font-mono text-xs font-bold text-stone-600 group-hover:text-stone-900 uppercase">
           JSON
